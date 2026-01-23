@@ -62,7 +62,8 @@ export default function CustomerDisplay() {
   ================================================================ */
   useEffect(() => {
     if (typeof document !== 'undefined') {
-      document.title = 'Pantalla Cliente - FerrePOS';
+      const name = globalState?.settings?.companyName || 'Despensa Neon';
+      document.title = name;
     }
     hydrateFromStorage();
   }, []);
@@ -222,7 +223,7 @@ const {
       >
         <div className="text-center mb-8">
           <h1 className="text-5xl font-bold">
-            {globalState?.settings?.companyName || 'FerrePOS'}
+            {globalState?.settings?.companyName || 'Despensa Neon'}
           </h1>
           <p className="text-2xl text-muted-foreground mt-2">Gracias por su compra</p>
         </div>

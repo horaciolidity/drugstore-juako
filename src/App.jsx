@@ -20,7 +20,7 @@ function ProtectedRoute({ children }) {
 
 function App() {
   useEffect(() => {
-    document.title = "FerrePOS - Sistema POS para Ferretería";
+    document.title = "Despensa Neon";
   }, []);
 
   return (

@@ -57,8 +57,8 @@ export default function Login() {
                 <LogIn className="h-8 w-8 text-white" />
               </div>
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">FerrePOS</h1>
-            <p className="text-gray-300">Sistema POS para Ferretería</p>
+            <h1 className="text-3xl font-bold text-white mb-2">Despensa Neon</h1>
+            <p className="text-gray-300">Sistema POS</p>
           </div>
 
           {/* Error Message */}
