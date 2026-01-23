@@ -95,7 +95,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const setPasswords = (adminPassword, employeePassword) => {
+    console.log('setPasswords called. auth state:', state);
     if (!state.isAuthenticated || state.role !== 'admin') {
+      console.warn('setPasswords blocked: user not admin or not authenticated', state);
       toast({
         title: 'Error',
         description: 'Solo el administrador puede cambiar contraseñas',
@@ -118,12 +120,23 @@ export const AuthProvider = ({ children }) => {
       employee: employeePassword.trim(),
     };
 
-    localStorage.setItem(PASSWORDS_KEY, JSON.stringify(passwords));
-    toast({
-      title: 'Éxito',
-      description: 'Contraseñas actualizadas correctamente',
-    });
-    return true;
+    try {
+      localStorage.setItem(PASSWORDS_KEY, JSON.stringify(passwords));
+      console.log('Passwords updated in localStorage:', passwords);
+      toast({
+        title: 'Éxito',
+        description: 'Contraseñas actualizadas correctamente',
+      });
+      return true;
+    } catch (e) {
+      console.error('Error saving passwords:', e);
+      toast({
+        title: 'Error',
+        description: 'No se pudo guardar las contraseñas',
+        variant: 'destructive',
+      });
+      return false;
+    }
   };
 
   const isAdmin = state.isAuthenticated && state.role === 'admin';

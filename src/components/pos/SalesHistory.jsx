@@ -45,6 +45,7 @@ const humanType = (t) => {
 /* ==================== DETALLE ==================== */
 const SaleDetail = ({ sale }) => {
   const { dispatch } = usePOS();
+  const { isAdmin } = useAuth();
   const [previewOpen, setPreviewOpen] = useState(false);
   const [converted, setConverted] = useState(!!sale._converted);
 
@@ -170,8 +171,8 @@ const SaleDetail = ({ sale }) => {
             </div>
           </div>
 
-          {/* Ganancia */}
-          {sale.type !== 'quote' && (
+          {/* Ganancia (solo admin) */}
+          {isAdmin && sale.type !== 'quote' && (
             <div className="border-t border-border pt-4">
               <h3 className="font-semibold mb-2 flex items-center">
                 <Percent className="h-4 w-4 mr-2" />Ganancia

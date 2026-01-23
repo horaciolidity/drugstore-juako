@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { usePOS } from "@/contexts/POSContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/components/ui/use-toast";
 import NumericInput from "@/components/common/NumericInput";
 
@@ -209,6 +210,7 @@ const CartItem = ({ item, onUpdate, onRemove }) => {
 
 export default function Cart() {
   const { state, dispatch, calculateTotal, calculateProfit } = usePOS();
+  const { isAdmin } = useAuth();
 
   const updateCartItem = (cartId, updates) => {
     dispatch({ type: "UPDATE_CART_ITEM", payload: { cartId, updates } });
@@ -278,10 +280,12 @@ export default function Cart() {
 
       {state.cart.length > 0 && (
         <div className="border-t border-border pt-4 space-y-2 text-lg">
-          <div className="flex justify-between text-green-500">
-            <span>Ganancia de la venta:</span>
-            <span>${profit.toFixed(2)}</span>
-          </div>
+          {isAdmin && (
+            <div className="flex justify-between text-green-500">
+              <span>Ganancia de la venta:</span>
+              <span>${profit.toFixed(2)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-foreground text-2xl font-bold">
             <span>Total:</span>
             <span>${total.toFixed(2)}</span>
