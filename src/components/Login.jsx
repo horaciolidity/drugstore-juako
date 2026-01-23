@@ -15,19 +15,28 @@ export default function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    console.log('Login attempt:', { username, password });
     setError('');
     setIsLoading(true);
 
     try {
       const success = login(username, password);
+      console.log('Login result:', success);
       if (!success) {
         setError('Usuario o contraseña incorrectos');
         setPassword('');
+        setIsLoading(false);
+      } else {
+        // Redirigir después de login exitoso
+        console.log('Login exitoso, redirigiendo...');
+        setTimeout(() => {
+          window.location.href = '/#/';
+        }, 500);
       }
     } catch (e) {
+      console.error('Error en login:', e);
       setError('Error al iniciar sesión');
       console.error(e);
-    } finally {
       setIsLoading(false);
     }
   };

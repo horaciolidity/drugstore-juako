@@ -49,30 +49,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
-  const login = (username, password) => {
-    const passwords = getPasswords();
-
-    // Validar credenciales
-    if (username.toLowerCase() === 'admin' && password === passwords.admin) {
-      const user = { username: 'admin' };
-      dispatch({ type: 'LOGIN', payload: { user, role: 'admin' } });
-      return true;
-    }
-
-    if (username.toLowerCase() === 'empleado' && password === passwords.employee) {
-      const user = { username: 'empleado' };
-      dispatch({ type: 'LOGIN', payload: { user, role: 'employee' } });
-      return true;
-    }
-
-    return false;
-  };
-
-  const logout = () => {
-    dispatch({ type: 'LOGOUT' });
-    localStorage.removeItem(STORAGE_KEY);
-  };
-
   const getPasswords = () => {
     const saved = localStorage.getItem(PASSWORDS_KEY);
     if (saved) {
@@ -87,6 +63,35 @@ export const AuthProvider = ({ children }) => {
       admin: 'admin',
       employee: '1234',
     };
+  };
+
+  const login = (username, password) => {
+    console.log('Auth login called with:', { username, password });
+    const passwords = getPasswords();
+    console.log('Current passwords:', passwords);
+
+    // Validar credenciales
+    if (username.toLowerCase() === 'admin' && password === passwords.admin) {
+      console.log('Admin login successful');
+      const user = { username: 'admin' };
+      dispatch({ type: 'LOGIN', payload: { user, role: 'admin' } });
+      return true;
+    }
+
+    if (username.toLowerCase() === 'empleado' && password === passwords.employee) {
+      console.log('Employee login successful');
+      const user = { username: 'empleado' };
+      dispatch({ type: 'LOGIN', payload: { user, role: 'employee' } });
+      return true;
+    }
+
+    console.log('Login failed - credentials dont match');
+    return false;
+  };
+
+  const logout = () => {
+    dispatch({ type: 'LOGOUT' });
+    localStorage.removeItem(STORAGE_KEY);
   };
 
   const setPasswords = (adminPassword, employeePassword) => {
