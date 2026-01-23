@@ -121,9 +121,10 @@ export default function POSScreen() {
           {/* ===== BANNER SUPERIOR ===== */}
           <div className="relative rounded-xl overflow-hidden mb-6 bg-black" style={{ height: 280 }}>
             <div
-              className="absolute inset-0 bg-cover bg-center"
+              className="absolute inset-0 bg-center bg-no-repeat"
               style={{
                 backgroundImage: `url(/hero.jpeg)`,
+                backgroundSize: '120% auto',
                 opacity: 0.85,
                 filter: 'saturate(0.95) contrast(1.05)',
               }}
