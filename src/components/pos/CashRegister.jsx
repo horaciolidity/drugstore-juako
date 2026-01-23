@@ -590,8 +590,8 @@ closure.sales = salesInTurn;
       {/* Detalle específico para ventas mixtas */}
       {((venta.payment?.method || venta.paymentMethod) === 'mixed') && (
         <>
-          <div className="flex justify-between"><span>Mixto — Efectivo</span><span>${Number(venta.payment?.cashAmount ?? venta.payment?.amountPaid || 0).toFixed(2)}</span></div>
-          <div className="flex justify-between"><span>Mixto — Transferencia</span><span>${Number(venta.payment?.transferAmount ?? (Number(venta.total || 0) - Number(venta.payment?.cashAmount ?? venta.payment?.amountPaid || 0))).toFixed(2)}</span></div>
+          <div className="flex justify-between"><span>Mixto — Efectivo</span><span>${Number(((venta.payment?.cashAmount ?? venta.payment?.amountPaid) || 0)).toFixed(2)}</span></div>
+          <div className="flex justify-between"><span>Mixto — Transferencia</span><span>${Number(venta.payment?.transferAmount ?? (Number(venta.total || 0) - Number(((venta.payment?.cashAmount ?? venta.payment?.amountPaid) || 0)))).toFixed(2)}</span></div>
           {venta.notes && (
             <div className="flex justify-between text-xs text-muted-foreground"><span>Novedad</span><span className="text-right">{venta.notes}</span></div>
           )}
