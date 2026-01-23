@@ -123,6 +123,7 @@ export default function ProductSearch({ searchQuery }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [issuesDialogOpen, setIssuesDialogOpen] = useState(false);
   const [productsWithIssues, setProductsWithIssues] = useState([]);
+  const [lastScannedCode, setLastScannedCode] = useState('');
 
   // Productos validados y enriquecidos con información de problemas
   const validatedProducts = useMemo(() => {
@@ -144,6 +145,30 @@ export default function ProductSearch({ searchQuery }) {
     
     return { errors, warnings, totalProblems, totalProducts: validatedProducts.length };
   }, [validatedProducts]);
+
+  // Efecto para auto-agregar producto cuando se escanea código exacto
+  React.useEffect(() => {
+    if (!searchQuery.trim() || searchQuery === lastScannedCode) return;
+
+    const query = searchQuery.trim().toLowerCase();
+    
+    // Buscar coincidencia exacta de código de barras
+    const exactMatch = validatedProducts.find(
+      product => product.code.toLowerCase() === query
+    );
+
+    if (exactMatch && exactMatch.stock > 0) {
+      // Auto-agregar el producto al carrito
+      addToCart(exactMatch, 1);
+      setLastScannedCode(query);
+      
+      // Opcional: mostrar feedback visual
+      toast({ 
+        title: 'Producto escaneado', 
+        description: `${exactMatch.name} agregado al carrito` 
+      });
+    }
+  }, [searchQuery, validatedProducts, lastScannedCode, addToCart]);
 
   const filteredProducts = useMemo(() => {
     if (!searchQuery.trim()) return validatedProducts.slice(0, 12);

@@ -31,6 +31,32 @@ export default function POSScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef(null);
 
+  // Limpiar búsqueda automáticamente cuando se agrega un producto al carrito
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    searchInputRef.current?.focus();
+  };
+
+  // Observar cambios en el carrito para limpiar búsqueda
+  React.useEffect(() => {
+    // Se limpia la búsqueda después de que se agregue un producto
+    const handleCartChange = () => {
+      // Usar setTimeout para asegurar que se ejecute después del render
+      setTimeout(() => {
+        setSearchQuery('');
+      }, 100);
+    };
+
+    // No ejecutar en el primer render
+    if (searchQuery.trim()) {
+      // Solo limpiar si la búsqueda actual es un código de barras (sin espacios y bastante corto)
+      const isBarcode = searchQuery.trim().length > 5 && !searchQuery.includes(' ');
+      if (isBarcode) {
+        handleCartChange();
+      }
+    }
+  }, [state.cart.length]);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       const isTyping =
