@@ -119,12 +119,12 @@ export default function POSScreen() {
       <div className="p-4 pb-20 md:pb-16 max-w-screen-2xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           {/* ===== BANNER SUPERIOR ===== */}
-          <div className="relative rounded-xl overflow-hidden mb-6" style={{ height: 220 }}>
+          <div className="relative rounded-xl overflow-hidden mb-6" style={{ height: 280 }}>
             <div
-              className="absolute inset-0 bg-cover bg-center"
+              className="absolute inset-0 bg-contain bg-center bg-no-repeat"
               style={{
                 backgroundImage: `url(/hero.jpeg)`,
-                opacity: 0.6,
+                opacity: 0.7,
                 filter: 'saturate(0.95) contrast(1.05)',
               }}
             />
