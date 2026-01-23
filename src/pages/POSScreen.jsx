@@ -4,13 +4,14 @@ import { motion } from 'framer-motion';
 import {
   Search, ShoppingCart, Calculator, Users, Package, DollarSign,
   BarChart3, Settings, Monitor, History, Truck, Sun, Moon,
-  MessageCircle, Mail
+  MessageCircle, Mail, LogOut
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
 import { usePOS } from '@/contexts/POSContext';
+import { useAuth } from '@/contexts/AuthContext';
 import ProductSearch from '@/components/pos/ProductSearch';
 import Cart from '@/components/pos/Cart';
 import PaymentPanel from '@/components/pos/PaymentPanel';
@@ -27,6 +28,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 export default function POSScreen() {
   const { state, dispatch } = usePOS();
   const { theme, setTheme } = useTheme();
+  const { logout, isAdmin, isEmployee } = useAuth();
   const [activeTab, setActiveTab] = useState('pos');
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef(null);
@@ -177,6 +179,19 @@ export default function POSScreen() {
                     ? `Caja Abierta: $${state.cashRegister.currentAmount.toFixed(2)}`
                     : 'Caja Cerrada'}
                 </div>
+
+                <Button
+                  onClick={() => {
+                    logout();
+                    window.location.href = '/#/login';
+                  }}
+                  variant="destructive"
+                  size="sm"
+                  className="border-red-500/50 text-white"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Cerrar Sesión
+                </Button>
               </div>
             </div>
           </div>
@@ -185,13 +200,17 @@ export default function POSScreen() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-4 md:flex md:w-auto card-glass p-1 bg-transparent border-border h-auto">
               <TabsTrigger value="pos"><Calculator className="h-4 w-4 mr-2" />POS</TabsTrigger>
-              <TabsTrigger value="products"><Package className="h-4 w-4 mr-2" />Productos</TabsTrigger>
-              <TabsTrigger value="customers"><Users className="h-4 w-4 mr-2" />Clientes</TabsTrigger>
-              <TabsTrigger value="providers"><Truck className="h-4 w-4 mr-2" />Proveedores</TabsTrigger>
+              {isAdmin && (
+                <>
+                  <TabsTrigger value="products"><Package className="h-4 w-4 mr-2" />Productos</TabsTrigger>
+                  <TabsTrigger value="customers"><Users className="h-4 w-4 mr-2" />Clientes</TabsTrigger>
+                  <TabsTrigger value="providers"><Truck className="h-4 w-4 mr-2" />Proveedores</TabsTrigger>
+                </>
+              )}
               <TabsTrigger value="history"><History className="h-4 w-4 mr-2" />Historial</TabsTrigger>
               <TabsTrigger value="cash"><DollarSign className="h-4 w-4 mr-2" />Caja</TabsTrigger>
-              <TabsTrigger value="stats"><BarChart3 className="h-4 w-4 mr-2" />Estadísticas</TabsTrigger>
-              <TabsTrigger value="settings"><Settings className="h-4 w-4 mr-2" />Config.</TabsTrigger>
+              {isAdmin && <TabsTrigger value="stats"><BarChart3 className="h-4 w-4 mr-2" />Estadísticas</TabsTrigger>}
+              {isAdmin && <TabsTrigger value="settings"><Settings className="h-4 w-4 mr-2" />Config.</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="pos">
@@ -227,6 +246,17 @@ export default function POSScreen() {
             <TabsContent value="settings"><SettingsPanel /></TabsContent>
           </Tabs>
         </motion.div>
+      </div>
+
+      {/* Usuario actual badge */}
+      <div className="fixed top-20 left-4 z-40">
+        <div className={`px-3 py-2 rounded-lg text-xs font-semibold backdrop-blur ${
+          isAdmin 
+            ? 'bg-red-500/20 text-red-200 border border-red-500/50' 
+            : 'bg-blue-500/20 text-blue-200 border border-blue-500/50'
+        }`}>
+          {isAdmin ? '👨‍💼 ADMIN' : '👤 EMPLEADO'}
+        </div>
       </div>
 
       {/* 🟢 BOTONES FLOTANTES DE SOPORTE (más chicos) */}

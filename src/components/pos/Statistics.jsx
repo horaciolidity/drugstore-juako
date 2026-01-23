@@ -5,6 +5,7 @@ import { BarChart3, TrendingUp, Package, Users, DollarSign, Calendar, FileDown }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { usePOS } from '@/contexts/POSContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 
 const COLORS = {
@@ -46,6 +47,7 @@ const StatCard = ({ title, value, icon, color = 'green', prefix = '', suffix = '
 
 export default function Statistics() {
   const { state } = usePOS();
+  const { isAdmin } = useAuth();
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [resetKey, setResetKey] = useState(0); // fuerza rerender al limpiar
 
@@ -546,10 +548,10 @@ ${filteredSales.map(s=>{
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <StatCard title="Ingresos" value={totalRevenue.toFixed(2)} icon={<DollarSign />} color="green" prefix="$" />
-        <StatCard title="Ganancia" value={totalProfit.toFixed(2)} icon={<DollarSign />} color="teal" prefix="$" />
+        {isAdmin && <StatCard title="Ganancia" value={totalProfit.toFixed(2)} icon={<DollarSign />} color="teal" prefix="$" />}
         <StatCard title="Ventas" value={totalSales} icon={<TrendingUp />} color="blue" />
         <StatCard title="Ticket Promedio" value={averageTicket.toFixed(2)} icon={<Users />} color="purple" prefix="$" />
-        <StatCard title="Margen Bruto" value={marginPercentage.toFixed(1)} icon={<BarChart3 />} color="yellow" suffix="%" />
+        {isAdmin && <StatCard title="Margen Bruto" value={marginPercentage.toFixed(1)} icon={<BarChart3 />} color="yellow" suffix="%" />}
       </div>
 
       {/* Tablas de detalle */}

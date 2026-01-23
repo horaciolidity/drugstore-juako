@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { usePOS } from '@/contexts/POSContext';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
 } from '@/components/ui/dialog';
@@ -240,6 +241,7 @@ const SaleDetail = ({ sale }) => {
 /* ==================== HISTORIAL ==================== */
 export default function SalesHistory() {
   const { state, dispatch } = usePOS();
+  const { isAdmin } = useAuth();
   const [filters, setFilters] = useState({
     dateStart: '',
     dateEnd: '',
@@ -291,10 +293,12 @@ export default function SalesHistory() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Historial de Operaciones</h1>
-        <Button variant="destructive" onClick={clearAll}>
-          <Trash2 className="h-4 w-4 mr-2" />
-          Eliminar todo
-        </Button>
+        {isAdmin && (
+          <Button variant="destructive" onClick={clearAll}>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Eliminar todo
+          </Button>
+        )}
       </div>
 
       {/* Filtros */}
@@ -356,7 +360,7 @@ export default function SalesHistory() {
                 <th className="text-left text-muted-foreground p-2">Tipo</th>
                 <th className="text-left text-muted-foreground p-2">Cliente</th>
                 <th className="text-right text-muted-foreground p-2">Total</th>
-                <th className="text-right text-muted-foreground p-2">Ganancia</th>
+                {isAdmin && <th className="text-right text-muted-foreground p-2">Ganancia</th>}
                 <th className="text-center text-muted-foreground p-2">Detalles</th>
               </tr>
             </thead>
@@ -368,7 +372,7 @@ export default function SalesHistory() {
                   <td className="p-3 capitalize text-yellow-500">{humanType(sale.type)}</td>
                   <td className="p-3 text-muted-foreground">{sale.customer?.name || 'Consumidor Final'}</td>
                   <td className="p-3 text-right font-semibold">{currency(sale.total)}</td>
-                  <td className="p-3 text-right font-semibold text-green-600">{currency(sale.profit)}</td>
+                  {isAdmin && <td className="p-3 text-right font-semibold text-green-600">{currency(sale.profit)}</td>}
                   <td className="p-3 text-center">
                     <Dialog>
                       <DialogTrigger asChild>

@@ -7,7 +7,8 @@ import {
   Download,
   AlertTriangle,
   Sun,
-  Moon
+  Moon,
+  Lock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +20,15 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { usePOS } from '@/contexts/POSContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Switch } from '@/components/ui/switch';
@@ -27,8 +36,12 @@ import { Slider } from '@/components/ui/slider';
 
 export default function SettingsPanel() {
   const { state, dispatch } = usePOS();
+  const { isAdmin, setPasswords } = useAuth();
   const [settings, setSettings] = useState(state.settings);
   const { theme, setTheme } = useTheme();
+  const [passwordDialog, setPasswordDialog] = useState(false);
+  const [newAdminPass, setNewAdminPass] = useState('');
+  const [newEmployeePass, setNewEmployeePass] = useState('');
 
   const handleSave = () => {
     dispatch({ type: 'UPDATE_SETTINGS', payload: settings });
@@ -37,6 +50,24 @@ export default function SettingsPanel() {
       description:
         'Los datos de la empresa y documentos se actualizaron correctamente.'
     });
+  };
+
+  const handleUpdatePasswords = () => {
+    if (!newAdminPass.trim() || !newEmployeePass.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Las contraseñas no pueden estar vacías',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const success = setPasswords(newAdminPass, newEmployeePass);
+    if (success) {
+      setNewAdminPass('');
+      setNewEmployeePass('');
+      setPasswordDialog(false);
+    }
   };
 
   const handleSettingsChange = (key, value) => {
@@ -116,6 +147,49 @@ export default function SettingsPanel() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Configuración del Sistema</h1>
         <div className="flex items-center gap-2">
+          {isAdmin && (
+            <Dialog open={passwordDialog} onOpenChange={setPasswordDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="border-yellow-500 text-yellow-600 hover:bg-yellow-500/10">
+                  <Lock className="h-4 w-4 mr-2" />
+                  Cambiar Contraseñas
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="card-glass border-border">
+                <DialogHeader>
+                  <DialogTitle>Cambiar Contraseñas</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="adminPass">Contraseña Admin</Label>
+                    <Input
+                      id="adminPass"
+                      type="password"
+                      placeholder="Nueva contraseña para admin"
+                      value={newAdminPass}
+                      onChange={(e) => setNewAdminPass(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="employeePass">Contraseña Empleado</Label>
+                    <Input
+                      id="employeePass"
+                      type="password"
+                      placeholder="Nueva contraseña para empleado"
+                      value={newEmployeePass}
+                      onChange={(e) => setNewEmployeePass(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    onClick={handleUpdatePasswords}
+                    className="w-full bg-yellow-600 hover:bg-yellow-700 text-white"
+                  >
+                    Guardar Contraseñas
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
           <Sun className="h-5 w-5" />
           <Switch
             checked={theme === 'dark'}

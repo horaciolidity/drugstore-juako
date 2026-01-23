@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { usePOS } from '@/contexts/POSContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -103,6 +104,7 @@ const CashMovementDialog = ({ isOpen, onOpenChange }) => {
 /* ================== Componente principal ================== */
 export default function CashRegister() {
   const { state, dispatch } = usePOS();
+  const { isAdmin } = useAuth();
   const [openingAmount, setOpeningAmount] = useState(0);
   const [isMovementDialogOpen, setIsMovementDialogOpen] = useState(false);
   const [expandedClosure, setExpandedClosure] = useState(null);
@@ -399,17 +401,21 @@ closure.sales = salesInTurn;
       </span>
     </div>
 
-    <div className="flex justify-between">
-      <span>📈 Ganancia Neta</span>
-      <span className="text-green-500 font-semibold">
-        +${gananciaTurno.toFixed(2)}
-      </span>
-    </div>
+    {isAdmin && (
+      <>
+        <div className="flex justify-between">
+          <span>📈 Ganancia Neta</span>
+          <span className="text-green-500 font-semibold">
+            +${gananciaTurno.toFixed(2)}
+          </span>
+        </div>
 
-    <div className="flex justify-between text-xs text-muted-foreground">
-      <span>Promedio por venta</span>
-      <span>${promGanancia.toFixed(2)}</span>
-    </div>
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>Promedio por venta</span>
+          <span>${promGanancia.toFixed(2)}</span>
+        </div>
+      </>
+    )}
 
     <div className="border-t mt-2 pt-2 text-xs">
       <p className="text-sm font-semibold mb-1">Desglose por método:</p>
@@ -467,11 +473,15 @@ closure.sales = salesInTurn;
               <div className="flex justify-between"><span>Subtotal</span><span>${subtotalTurno.toFixed(2)}</span></div>
               <div className="flex justify-between"><span>IVA</span><span>${ivaTurno.toFixed(2)}</span></div>
               <div className="flex justify-between font-semibold"><span>Total</span><span>${totalTurno.toFixed(2)}</span></div>
-<div className="flex justify-between text-base font-semibold border-t pt-2">
-  <span>Ganancia Neta</span>
-  <span className="text-green-500">+${gananciaTurno.toFixed(2)}</span>
-</div>
-              <div className="flex justify-between text-xs text-muted-foreground"><span>Promedio por venta</span><span>${promGanancia.toFixed(2)}</span></div>
+              {isAdmin && (
+                <>
+                  <div className="flex justify-between text-base font-semibold border-t pt-2">
+                    <span>Ganancia Neta</span>
+                    <span className="text-green-500">+${gananciaTurno.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground"><span>Promedio por venta</span><span>${promGanancia.toFixed(2)}</span></div>
+                </>
+              )}
               <div className="border-t mt-2 pt-2">
                 <p className="text-sm font-semibold mb-1">Desglose por método:</p>
                 {Object.entries(desgloseMetodo).map(([m, v]) => (
@@ -530,7 +540,7 @@ closure.sales = salesInTurn;
       <div className="flex justify-between"><span>Subtotal:</span><span>${Number(venta.subtotal || 0).toFixed(2)}</span></div>
       <div className="flex justify-between"><span>IVA:</span><span>${Number(venta.taxAmount || venta.tax || 0).toFixed(2)}</span></div>
       <div className="flex justify-between"><span>Total:</span><span>${Number(venta.total || 0).toFixed(2)}</span></div>
-      <div className="flex justify-between text-green-500"><span>Ganancia:</span><span>+${Number(venta.profit || 0).toFixed(2)}</span></div>
+      {isAdmin && <div className="flex justify-between text-green-500"><span>Ganancia:</span><span>+${Number(venta.profit || 0).toFixed(2)}</span></div>}
     </div>
 
     {venta.items?.length > 0 && (
