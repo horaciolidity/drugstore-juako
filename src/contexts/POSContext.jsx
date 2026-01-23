@@ -438,15 +438,18 @@ function posReducer(state, action) {
     case 'SAVE_SALE': {
       const sale = action.payload;
 
-      // Descontar stock
+      // ✅ FIX #2: Solo descontar stock si es una venta real (no presupuesto/remito)
+      const shouldDeductStock = sale.type === 'sale' || sale.type === 'credit' || !sale._skipStockDeduction;
       const products = state.products.map(p => {
+        if (!shouldDeductStock) return p;
         const sold = sale.items.filter(i => i.id === p.id).reduce((s, i) => s + Number(i.quantity || 0), 0);
         return sold ? { ...p, stock: Math.max(0, Number(p.stock || 0) - sold) } : p;
       });
 
-      // Caja (solo si está abierta)
+      // ✅ FIX #3: Caja - Solo registrar ventas reales (no presupuestos/remitos)
       let cashRegister = { ...state.cashRegister };
-      if (cashRegister.isOpen) {
+      const isSaleTransaction = sale.type === 'sale' || sale.type === 'credit';
+      if (cashRegister.isOpen && isSaleTransaction) {
         const method = sale.payment?.method || state.paymentMethod || 'cash';
         const total  = Number(sale.total || 0);
         const paid   = Number(sale.payment?.amountPaid || 0);

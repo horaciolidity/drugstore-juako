@@ -260,23 +260,6 @@ const DocumentPreview = ({
         return;
       }
       const created = await processSale(documentType);
-          // ✅ Registrar venta en la caja
-    if (created) {
-      const paymentMethod =
-        created.paymentMethod || state.paymentMethod || "cash";
-
-      // Registrar la venta dentro del contexto (para la caja)
-      state?.dispatch?.({
-        type: "REGISTER_SALE",
-        payload: {
-          items: created.items || [],
-          total: Number(created.total || 0),
-          profit: Number(created.profit || 0),
-          paymentMethod,
-          timestamp: created.timestamp || new Date().toISOString(),
-        },
-      });
-    }
 
       if (!created) {
         toast({ title: "No se pudo emitir", variant: "destructive" });
