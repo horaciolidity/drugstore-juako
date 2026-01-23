@@ -143,7 +143,6 @@ export default function POSScreen() {
                 </div>
                 <div className="text-white">
                   <h1 className="text-3xl font-bold">{state.settings.companyName}</h1>
-                  <p className="text-white/80">Sistema POS para Ferretería</p>
                 </div>
               </div>
 
