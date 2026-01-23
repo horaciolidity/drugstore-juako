@@ -98,6 +98,7 @@ const {
   taxAmount,
   total,
   isEmpty,
+  companyName,
 } = event.data;
 
       setDisplayData((prev) => {
@@ -131,6 +132,13 @@ const {
     total: Number(total ?? computedTotal ?? 0),
   };
 });
+
+      // actualizar nombre de la compañía si viene en el mensaje
+      if (event.data?.companyName) {
+        const name = event.data.companyName || 'Despensa Neon';
+        setCompanyName(name);
+        if (typeof document !== 'undefined') document.title = name;
+      }
 
     };
 

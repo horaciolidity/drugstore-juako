@@ -794,6 +794,8 @@ export function POSProvider({ children }) {
       taxAmount: Number(detail.taxAmount || 0),
       total: Number(detail.total || 0),
       isEmpty: shouldSendEmpty,
+      // Enviar nombre de la empresa para que otras ventanas se sincronicen
+      companyName: state.settings?.companyName ?? null,
     });
 
     channel.close();
@@ -803,7 +805,7 @@ export function POSProvider({ children }) {
     state.paymentMethod,
     state.paymentAmount,
     state.discount,
-    state.settings.taxRate,
+    state.settings,
   ]);
 
   /* --------------------- API expuesta --------------------- */
