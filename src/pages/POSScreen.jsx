@@ -119,12 +119,12 @@ export default function POSScreen() {
       <div className="p-4 pb-20 md:pb-16 max-w-screen-2xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           {/* ===== BANNER SUPERIOR ===== */}
-          <div className="relative rounded-xl overflow-hidden mb-6" style={{ height: 280 }}>
+          <div className="relative rounded-xl overflow-hidden mb-6 bg-black" style={{ height: 280 }}>
             <div
-              className="absolute inset-0 bg-contain bg-center bg-no-repeat"
+              className="absolute inset-0 bg-cover bg-center"
               style={{
                 backgroundImage: `url(/hero.jpeg)`,
-                opacity: 0.7,
+                opacity: 0.85,
                 filter: 'saturate(0.95) contrast(1.05)',
               }}
             />
@@ -132,7 +132,7 @@ export default function POSScreen() {
               className="absolute inset-0 pointer-events-none"
               style={{
                 background:
-                  'linear-gradient(to bottom, rgba(0,0,0,0.55), rgba(0,0,0,0.25) 40%, rgba(0,0,0,0.05) 70%, rgba(0,0,0,0) 100%)',
+                  'linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.1) 70%, rgba(0,0,0,0) 100%)',
               }}
             />
 
