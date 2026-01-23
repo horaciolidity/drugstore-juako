@@ -17,6 +17,7 @@ export default function CustomerDisplay() {
     discount: 0,
     total: 0,
   });
+  const [companyName, setCompanyName] = useState(() => globalState?.settings?.companyName || 'Despensa Neon');
 
   const channelRef = useRef(null);
 
@@ -63,10 +64,20 @@ export default function CustomerDisplay() {
   useEffect(() => {
     if (typeof document !== 'undefined') {
       const name = globalState?.settings?.companyName || 'Despensa Neon';
+      setCompanyName(name);
       document.title = name;
     }
     hydrateFromStorage();
   }, []);
+
+  // Si las settings cambian en la misma sesión, actualizar el nombre mostrado
+  useEffect(() => {
+    const name = globalState?.settings?.companyName || 'Despensa Neon';
+    if (name !== companyName) {
+      setCompanyName(name);
+      if (typeof document !== 'undefined') document.title = name;
+    }
+  }, [globalState?.settings?.companyName]);
 
   /* ================================================================
      Suscripción a BroadcastChannel + fallback a storage (blindada)
@@ -223,7 +234,7 @@ const {
       >
         <div className="text-center mb-8">
           <h1 className="text-5xl font-bold">
-            {globalState?.settings?.companyName || 'Despensa Neon'}
+            {companyName}
           </h1>
           <p className="text-2xl text-muted-foreground mt-2">Gracias por su compra</p>
         </div>
