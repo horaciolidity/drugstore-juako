@@ -24,7 +24,7 @@ export default function CustomerManagement() {
     phone: "",
     email: "",
     address: "",
-    creditLimit: 0,
+    creditLimit: '',
   });
 
   const customers = state.customers || [];
@@ -44,7 +44,7 @@ export default function CustomerManagement() {
       phone: "",
       email: "",
       address: "",
-      creditLimit: 0,
+      creditLimit: '',
     });
     setEditingCustomer(null);
   };
@@ -62,14 +62,14 @@ export default function CustomerManagement() {
     if (editingCustomer) {
       dispatch({
         type: "UPDATE_CUSTOMER",
-        payload: { id: editingCustomer.id, updates: newCustomer },
+        payload: { id: editingCustomer.id, updates: { ...newCustomer, creditLimit: Number(newCustomer.creditLimit || 0) } },
       });
       toast({
         title: "Cliente actualizado",
         description: `${newCustomer.name} ha sido actualizado.`,
       });
     } else {
-      const created = addCustomer(newCustomer);
+      const created = addCustomer({ ...newCustomer, creditLimit: Number(newCustomer.creditLimit || 0) });
       if (!created) return;
     }
 
@@ -83,7 +83,7 @@ export default function CustomerManagement() {
       phone: customer.phone || "",
       email: customer.email || "",
       address: customer.address || "",
-      creditLimit: Number(customer.creditLimit || 0),
+      creditLimit: customer.creditLimit == null ? '' : Number(customer.creditLimit),
     });
     setEditingCustomer(customer);
     setIsAddDialogOpen(true);
@@ -220,7 +220,7 @@ export default function CustomerManagement() {
                   onChange={(e) =>
                     setNewCustomer({
                       ...newCustomer,
-                      creditLimit: parseFloat(e.target.value) || 0,
+                      creditLimit: e.target.value === '' ? '' : parseFloat(e.target.value),
                     })
                   }
                 />

@@ -50,13 +50,13 @@ export default function ProductManagement() {
   const [newProduct, setNewProduct] = useState({
     code: '',
     name: '',
-    price: 0,
-    cost: 0,
-    stock: 0,
+    price: '',
+    cost: '',
+    stock: '',
     unit: 'unidad',
     category: '',
     providerId: '',
-    minStock: 0
+    minStock: ''
   });
 
   // Obtener categorías únicas para el filtro
@@ -125,12 +125,21 @@ export default function ProductManagement() {
       return;
     }
 
+    // Sanitizar campos numéricos antes de enviar al reducer
+    const sanitized = {
+      ...newProduct,
+      price: Number(newProduct.price === '' ? 0 : newProduct.price),
+      cost: Number(newProduct.cost === '' ? 0 : newProduct.cost),
+      stock: Number(newProduct.stock === '' ? 0 : newProduct.stock),
+      minStock: Number(newProduct.minStock === '' ? 0 : newProduct.minStock),
+    };
+
     if (editingProduct) {
-      dispatch({ type: 'UPDATE_PRODUCT', payload: { id: editingProduct.id, updates: newProduct } });
-      toast({ title: "Producto actualizado", description: `${newProduct.name} ha sido actualizado` });
+      dispatch({ type: 'UPDATE_PRODUCT', payload: { id: editingProduct.id, updates: sanitized } });
+      toast({ title: "Producto actualizado", description: `${sanitized.name} ha sido actualizado` });
     } else {
-      dispatch({ type: 'ADD_PRODUCT', payload: newProduct });
-      toast({ title: "Producto agregado", description: `${newProduct.name} ha sido agregado` });
+      dispatch({ type: 'ADD_PRODUCT', payload: sanitized });
+      toast({ title: "Producto agregado", description: `${sanitized.name} ha sido agregado` });
     }
 
     setIsAddDialogOpen(false);
@@ -637,7 +646,7 @@ const validateImportedProducts = (products) => {
                     min="0" 
                     value={newProduct.price} 
                     onChange={(e) => {
-                      const updated = { ...newProduct, price: parseFloat(e.target.value) || 0 };
+                      const updated = { ...newProduct, price: e.target.value === '' ? '' : parseFloat(e.target.value) };
                       setNewProduct(updated);
                       validateInRealTime(updated, editingProduct?.id);
                     }}
@@ -652,7 +661,7 @@ const validateImportedProducts = (products) => {
                     min="0" 
                     value={newProduct.cost} 
                     onChange={(e) => {
-                      const updated = { ...newProduct, cost: parseFloat(e.target.value) || 0 };
+                      const updated = { ...newProduct, cost: e.target.value === '' ? '' : parseFloat(e.target.value) };
                       setNewProduct(updated);
                       validateInRealTime(updated, editingProduct?.id);
                     }}
@@ -666,7 +675,7 @@ const validateImportedProducts = (products) => {
                     min="0" 
                     value={newProduct.stock} 
                     onChange={(e) => {
-                      const updated = { ...newProduct, stock: parseFloat(e.target.value) || 0 };
+                      const updated = { ...newProduct, stock: e.target.value === '' ? '' : parseFloat(e.target.value) };
                       setNewProduct(updated);
                       validateInRealTime(updated, editingProduct?.id);
                     }}
@@ -723,7 +732,7 @@ const validateImportedProducts = (products) => {
                     min="0" 
                     value={newProduct.minStock} 
                     onChange={(e) => {
-                      const updated = { ...newProduct, minStock: parseFloat(e.target.value) || 0 };
+                      const updated = { ...newProduct, minStock: e.target.value === '' ? '' : parseFloat(e.target.value) };
                       setNewProduct(updated);
                       validateInRealTime(updated, editingProduct?.id);
                     }}

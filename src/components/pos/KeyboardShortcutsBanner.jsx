@@ -7,8 +7,8 @@ import { Command } from 'lucide-react';
 const shortcuts = [
   { key: 'F2', label: 'Buscar' },
   { key: 'F6', label: 'Efectivo' },
-  { key: 'F7', label: 'Transfer' },
-  { key: 'F8', label: 'Ppto.' },
+  { key: 'F7', label: 'Transferencia' },
+  { key: 'F8', label: 'Presupuesto' },
   { key: 'F9', label: 'Remito' },
   { key: 'F10', label: 'Factura' },
   { key: 'Ctrl+P', label: 'Imprimir' },

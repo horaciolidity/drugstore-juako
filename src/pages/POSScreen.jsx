@@ -221,7 +221,7 @@ export default function POSScreen() {
                       <Search className="h-6 w-6 text-primary" />
                       <Input
                         ref={searchInputRef}
-                        placeholder="Buscar producto por nombre o código de barras (F2)"
+                        placeholder="Buscar producto por nombre o código de barras"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="flex-1 text-base h-12"

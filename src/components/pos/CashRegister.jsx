@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 /* ================== Diálogo de movimiento ================== */
 const CashMovementDialog = ({ isOpen, onOpenChange }) => {
   const { dispatch } = usePOS();
-  const [amount, setAmount] = useState(0);
+  const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState('income');
 
@@ -43,7 +43,7 @@ const CashMovementDialog = ({ isOpen, onOpenChange }) => {
       description: `Se ${type === 'income' ? 'agregó' : 'retiró'} $${Number(amount).toFixed(2)}.`,
     });
     onOpenChange(false);
-    setAmount(0);
+    setAmount('');
     setDescription('');
   };
 
@@ -79,7 +79,7 @@ const CashMovementDialog = ({ isOpen, onOpenChange }) => {
               type="number"
               step="0.01"
               value={amount}
-              onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
+              onChange={(e) => setAmount(e.target.value === '' ? '' : parseFloat(e.target.value))}
             />
           </div>
 
@@ -105,7 +105,7 @@ const CashMovementDialog = ({ isOpen, onOpenChange }) => {
 export default function CashRegister() {
   const { state, dispatch } = usePOS();
   const { isAdmin } = useAuth();
-  const [openingAmount, setOpeningAmount] = useState(0);
+  const [openingAmount, setOpeningAmount] = useState('');
   const [isMovementDialogOpen, setIsMovementDialogOpen] = useState(false);
   const [expandedClosure, setExpandedClosure] = useState(null);
 
@@ -298,7 +298,7 @@ dispatch({ type: 'OPEN_CASH_REGISTER', payload: fixedOpening });
       title: 'Caja abierta',
       description: `Caja abierta con un monto inicial de $${Number(openingAmount).toFixed(2)}`,
     });
-    setOpeningAmount(0);
+    setOpeningAmount('');
   };
 
   const handleCloseRegister = () => {
@@ -452,7 +452,7 @@ closure.sales = salesInTurn;
                   type="number"
                   step="0.01"
                   value={openingAmount}
-                  onChange={(e) => setOpeningAmount(parseFloat(e.target.value) || 0)}
+                  onChange={(e) => setOpeningAmount(e.target.value === '' ? '' : parseFloat(e.target.value))}
                 />
               </div>
               <Button className="w-full bg-green-600" onClick={handleOpenRegister}>

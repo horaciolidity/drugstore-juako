@@ -326,7 +326,7 @@ export default function PaymentPanel() {
             className="h-16 text-lg bg-green-600 hover:bg-green-700 disabled:opacity-50"
           >
             <Receipt className="h-5 w-5 mr-2" />
-            Factura (F10)
+            Factura
           </Button>
 
           <Button
@@ -337,7 +337,7 @@ export default function PaymentPanel() {
             className="h-16 text-lg"
           >
             <FileText className="h-5 w-5 mr-2" />
-            Remito (F9)
+            Remito
           </Button>
 
           <Button
@@ -348,7 +348,7 @@ export default function PaymentPanel() {
             className="h-16 text-lg col-span-2 border-yellow-500 text-yellow-500 hover:bg-yellow-500/10 hover:text-yellow-500"
           >
             <Calculator className="h-5 w-5 mr-2" />
-            Presupuesto (F8)
+            Presupuesto
           </Button>
 
           <Button
