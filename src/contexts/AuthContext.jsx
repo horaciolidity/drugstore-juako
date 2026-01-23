@@ -123,6 +123,47 @@ export const AuthProvider = ({ children }) => {
     try {
       localStorage.setItem(PASSWORDS_KEY, JSON.stringify(passwords));
       console.log('Passwords updated in localStorage:', passwords);
+
+      // Intentar exportar las contraseñas a un archivo en el escritorio
+      const exportPasswordsFile = async () => {
+        try {
+          const content = `admin:${passwords.admin}\nemployee:${passwords.employee}\nupdated:${new Date().toISOString()}\n`;
+
+          // Si el File System Access API está disponible, solicitar carpeta (sugerir Escritorio)
+          if (window.showDirectoryPicker) {
+            const dirHandle = await window.showDirectoryPicker({ startIn: 'desktop' }).catch(() => null);
+            if (dirHandle) {
+              const folderHandle = await dirHandle.getDirectoryHandle('contraseñas POS', { create: true });
+              const fileName = `contraseñas_${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
+              const fileHandle = await folderHandle.getFileHandle(fileName, { create: true });
+              const writable = await fileHandle.createWritable();
+              await writable.write(content);
+              await writable.close();
+              toast({ title: 'Contraseñas guardadas', description: `Archivo creado en carpeta 'contraseñas POS'` });
+              return;
+            }
+          }
+
+          // Fallback: descargar archivo para que el usuario lo guarde manualmente
+          const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `contraseñas_POS_${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          toast({ title: 'Contraseñas exportadas', description: 'Descarga iniciada (guarda el archivo en tu Escritorio si lo deseas).' });
+        } catch (err) {
+          console.error('Error exporting passwords file:', err);
+          toast({ title: 'Advertencia', description: 'No se pudo guardar el archivo automáticamente. Se actualizó la configuración.' });
+        }
+      };
+
+      // Ejecutar export en background (no await para no bloquear)
+      exportPasswordsFile();
+
       toast({
         title: 'Éxito',
         description: 'Contraseñas actualizadas correctamente',
