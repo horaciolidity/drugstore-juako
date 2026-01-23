@@ -120,9 +120,9 @@ export default function CashRegister() {
     cashFromMixed = 0,
   } = cr;
 
-  const totalCashSales = Number(salesByType.cash || 0);
-  const totalTransferSales = Number(salesByType.transfer || 0);
-  const totalMixedSales = Number(salesByType.mixed || 0);
+  let totalCashSales = Number(salesByType.cash || 0);
+  let totalTransferSales = Number(salesByType.transfer || 0);
+  let totalMixedSales = Number(salesByType.mixed || 0);
 
  // 🔧 Solo movimientos MANUALES reales (excluir ventas/vueltos/apertura/cierre/auto)
 const movNet = (movements || [])
@@ -153,18 +153,9 @@ const movNet = (movements || [])
     return acc;
   }, 0);
 
-// 💵 Solo efectivo en caja: apertura + efectivo + efectivo de mixto + mov. manuales
-const expectedAmount = parseFloat(
-  (
-    Number(currentOpening || 0) +
-    Number(totalCashSales || 0) +
-    Number(cashFromMixed || 0) +
-    Number(movNet || 0)
-  ).toFixed(2)
-);
-
-
-const difference = parseFloat((Number(currentAmount || 0) - expectedAmount).toFixed(2));
+// expectedAmount and difference will be computed after we aggregate sales in the turn
+let expectedAmount = 0;
+let difference = 0;
 
   /* ------------------- Totales del turno ------------------- */
   const salesInTurn = useMemo(() => {
@@ -176,6 +167,37 @@ const difference = parseFloat((Number(currentAmount || 0) - expectedAmount).toFi
       return when >= start;
     });
   }, [state.sales, openedAt]);
+
+  // ------------------- Totales por método (calculado a partir de las ventas del turno)
+  const computedByMethod = salesInTurn.reduce((acc, s) => {
+    const method = s?.payment?.method ?? s?.paymentMethod ?? 'desconocido';
+    const total = Number(s.total || 0);
+    acc[method] = (acc[method] || 0) + total;
+    if (method === 'mixed') {
+      // intentar extraer la porción en efectivo si está disponible
+      const cashPart = Number(s.payment?.cashAmount || s.payment?.cash || 0);
+      acc.mixedCash = (acc.mixedCash || 0) + cashPart;
+      acc.mixedTransfer = (acc.mixedTransfer || 0) + (total - cashPart);
+    }
+    return acc;
+  }, {});
+
+  totalCashSales = Number(computedByMethod.cash || 0);
+  totalTransferSales = Number(computedByMethod.transfer || 0);
+  totalMixedSales = Number(computedByMethod.mixed || 0);
+  const cashFromMixedLocal = Number(computedByMethod.mixedCash || 0);
+
+  // 💵 Solo efectivo en caja: apertura + efectivo + efectivo de mixto + mov. manuales
+  expectedAmount = parseFloat(
+    (
+      Number(currentOpening || 0) +
+      Number(totalCashSales || 0) +
+      Number(cashFromMixedLocal || 0) +
+      Number(movNet || 0)
+    ).toFixed(2)
+  );
+
+  difference = parseFloat((Number(currentAmount || 0) - expectedAmount).toFixed(2));
 
   const subtotalTurno = salesInTurn.reduce((s, x) => s + Number(x.subtotal || 0), 0);
   const ivaTurno = salesInTurn.reduce((s, x) => s + Number(x.taxAmount || x.tax || 0), 0);
@@ -225,11 +247,12 @@ const difference = parseFloat((Number(currentAmount || 0) - expectedAmount).toFi
     Cierre: ${new Date(closure.closedAt).toLocaleString()}</p>
 
     <table>
-      <tr><th>Inicial</th><th>Ventas Efectivo</th><th>Mixto (ef.)</th><th>Mov. Manuales</th><th>Esperado</th><th>Actual</th><th>Diferencia</th></tr>
+      <tr><th>Inicial</th><th>Ventas Efectivo</th><th>Transferencia</th><th>Mixto (ef.)</th><th>Mov. Manuales</th><th>Esperado</th><th>Actual</th><th>Diferencia</th></tr>
       <tr>
         <td>${fmt(closure.openingAmount)}</td>
         <td>${fmt(closure.salesByType?.cash || 0)}</td>
-        <td>${fmt(closure.salesByType?.mixed || 0)}</td>
+        <td>${fmt(closure.salesByType?.transfer || 0)}</td>
+        <td>${fmt(closure.cashFromMixed || 0)}</td>
         <td>${fmt(
           closure.movements
             ?.filter((m) => m.type === 'income' || m.type === 'expense')
@@ -307,7 +330,12 @@ dispatch({ type: 'OPEN_CASH_REGISTER', payload: fixedOpening });
       openedAt,
       closedAt: new Date().toISOString(),
       openingAmount: currentOpening,
-      salesByType,
+      salesByType: {
+        cash: totalCashSales,
+        transfer: totalTransferSales,
+        mixed: totalMixedSales,
+      },
+      cashFromMixed: cashFromMixedLocal,
       currentAmount,
       expectedAmount,
       difference: parseFloat(difference.toFixed(2)),
@@ -353,7 +381,7 @@ closure.sales = salesInTurn;
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between"><span>Monto Inicial</span><span>${currentOpening.toFixed(2)}</span></div>
                 <div className="flex justify-between"><span>Ventas Efectivo</span><span>${totalCashSales.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span>Mixto (efectivo)</span><span>${cashFromMixed.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span>Mixto (efectivo)</span><span>${cashFromMixedLocal.toFixed(2)}</span></div>
                 <div className="flex justify-between"><span>Movimientos manuales</span><span>${movNet.toFixed(2)}</span></div>
                 <div className="flex justify-between font-semibold border-t pt-2"><span>Esperado</span><span>${expectedAmount.toFixed(2)}</span></div>
                 <div className="flex justify-between font-bold text-lg"><span>Actual</span><span>${currentAmount.toFixed(2)}</span></div>
@@ -484,11 +512,28 @@ closure.sales = salesInTurn;
               )}
               <div className="border-t mt-2 pt-2">
                 <p className="text-sm font-semibold mb-1">Desglose por método:</p>
-                {Object.entries(desgloseMetodo).map(([m, v]) => (
-                  <div key={m} className="flex justify-between">
-                    <span className="capitalize">{m}</span><span>${v.toFixed(2)}</span>
+                <div className="space-y-0.5">
+                  <div className="flex justify-between">
+                    <span>Efectivo</span>
+                    <span>${totalCashSales.toFixed(2)}</span>
                   </div>
-                ))}
+                  <div className="flex justify-between">
+                    <span>Transferencia</span>
+                    <span>${totalTransferSales.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Mixto (total)</span>
+                    <span>${totalMixedSales.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Mixto (efectivo)</span>
+                    <span>${cashFromMixedLocal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Mixto (transferencia)</span>
+                    <span>${(totalMixedSales - cashFromMixedLocal).toFixed(2)}</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -604,7 +649,11 @@ closure.sales = salesInTurn;
                         <div>Inicial: ${closure.openingAmount.toFixed(2)}</div>
                         <div>Efectivo: ${closure.salesByType?.cash?.toFixed(2)}</div>
                         <div>Transferencias: ${closure.salesByType?.transfer?.toFixed(2)}</div>
-                        <div>Mixto: ${closure.salesByType?.mixed?.toFixed(2)}</div>
+                        <div>Mixto (total): ${closure.salesByType?.mixed?.toFixed(2)}</div>
+                        <div>Mixto (efectivo): ${closure.cashFromMixed?.toFixed(2)}</div>
+                        <div>Mixto (transferencia): ${(
+                          (closure.salesByType?.mixed || 0) - (closure.cashFromMixed || 0)
+                        ).toFixed(2)}</div>
                         <div>Esperado: ${closure.expectedAmount.toFixed(2)}</div>
                         <div>Actual: ${closure.currentAmount.toFixed(2)}</div>
                         <div className="font-semibold border-t pt-1 mt-1">Movimientos:</div>
