@@ -623,6 +623,7 @@ function posReducer(state, action) {
         change: 0,
         documentNumber: `TEMP-${Date.now()}`,
         fiscal: { training: true, provider: 'none', cae: null, cae_due_date: null, pdf_url: null, extra: {} },
+        _skipStockDeduction: false,
       };
       return posReducer(state, { type: 'SAVE_SALE', payload: newSale });
     }
@@ -900,6 +901,7 @@ export function POSProvider({ children }) {
       notes: state.notes || '',
       documentNumber: null,
       fiscal: { training: true, provider: 'none', cae: null, cae_due_date: null, pdf_url: null, extra: {} },
+      _skipStockDeduction: type === 'quote' || type === 'remit',
     };
 
     if (['sale', 'credit'].includes(type) && state.settings.invoicing?.enabled) {
