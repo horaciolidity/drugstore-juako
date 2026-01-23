@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -289,6 +290,24 @@ export default function PaymentPanel() {
             {state.paymentMethod === "cash" && change > 0 && (
               <div className="text-green-600 font-semibold text-lg">
                 Vuelto: ${change.toFixed(2)}
+              </div>
+            )}
+            {/* Para mixto: mostrar desglose y campo de novedad */}
+            {state.paymentMethod === "mixed" && (
+              <div className="space-y-2">
+                <div className="text-sm text-muted-foreground">
+                  Transferencia: <strong>${(total - Number(state.paymentAmount || 0)).toFixed(2)}</strong>
+                </div>
+                <div>
+                  <Label htmlFor="mixedNote">Novedad (venta mixto)</Label>
+                  <Textarea
+                    id="mixedNote"
+                    value={state.notes || ''}
+                    onChange={(e) => dispatch({ type: 'SET_NOTES', payload: e.target.value })}
+                    placeholder="Opcional: información sobre la transferencia, quién envía, referencia, etc."
+                    className="h-24"
+                  />
+                </div>
               </div>
             )}
           </div>

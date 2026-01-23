@@ -888,11 +888,15 @@ export function POSProvider({ children }) {
       taxAmount: Number(taxAmount.toFixed(2)),
       total: Number(total.toFixed(2)),
       profit: Number(profit.toFixed(2)),
-      payment: {
-        method: state.paymentMethod,
-        amountPaid: Number(state.paymentAmount || 0),
-        change: state.paymentMethod === 'cash' ? Number(Math.max(0, (Number(state.paymentAmount || 0) - total)).toFixed(2)) : 0,
-      },
+      payment: (() => {
+        const base = { method: state.paymentMethod };
+        const cashAmt = Number(state.paymentAmount || 0);
+        if (state.paymentMethod === 'mixed') {
+          const transferAmt = Number((total - cashAmt).toFixed(2));
+          return { ...base, amountPaid: cashAmt, cashAmount: cashAmt, transferAmount: transferAmt, change: 0 };
+        }
+        return { ...base, amountPaid: cashAmt, change: state.paymentMethod === 'cash' ? Number(Math.max(0, (cashAmt - total)).toFixed(2)) : 0 };
+      })(),
       paymentMethod: state.paymentMethod,
       paymentAmount: Number(state.paymentAmount || 0),
       change: state.paymentMethod === 'cash' ? Number(Math.max(0, (Number(state.paymentAmount || 0) - total)).toFixed(2)) : 0,
