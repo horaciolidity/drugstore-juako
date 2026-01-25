@@ -131,24 +131,8 @@ const initialState = {
   notes: '',
 };
 
-const sampleProviders = [
-  { id: 'prov1', name: 'Ferretería Central', contactPerson: 'Carlos Ruiz', phone: '11-4567-8901', email: 'compras@central.com' },
-  { id: 'prov2', name: 'Pinturas SA',       contactPerson: 'Ana Gomez',   phone: '11-2345-6789', email: 'ventas@pinturassa.com' },
-  { id: 'prov3', name: 'Eléctrica Norte',   contactPerson: 'Pedro Martin',phone: '11-3456-7890', email: 'pedidos@electricanorte.com' },
-];
-
-const sampleProducts = [
-  { id: '1', code: '7891234567890', name: 'Tornillo Phillips 3x20mm', price: 15.50,  cost: 8.00,   stock: 500, unit: 'unidad', category: 'Tornillería',  providerId: 'prov1', minStock: 50 },
-  { id: '2', code: '7891234567891', name: 'Pintura Látex Blanco 4L',  price: 2850.00, cost: 1900.00, stock: 25,  unit: 'unidad', category: 'Pinturas',    providerId: 'prov2', minStock: 5  },
-  { id: '3', code: '7891234567892', name: 'Cable Unipolar 2.5mm',     price: 180.00,  cost: 120.00, stock: 1000, unit: 'metro',  category: 'Electricidad',providerId: 'prov3', minStock: 100 },
-  { id: '4', code: '7891234567893', name: 'Martillo 500g',            price: 1250.00, cost: 800.00, stock: 15,  unit: 'unidad', category: 'Herramientas', providerId: 'prov1', minStock: 3  },
-  { id: '5', code: '7891234567894', name: 'Cemento Portland 50kg',    price: 950.00,  cost: 650.00, stock: 80,  unit: 'kg',     category: 'Construcción', providerId: 'prov1', minStock: 20 },
-];
-
-const sampleCustomers = [
-  { id: '1', name: 'Juan Pérez',  email: 'juan@email.com',  phone: '+541198765432', address: 'Calle Falsa 123', balance: 0,    creditLimit: 50000 },
-  { id: '2', name: 'María García',email: 'maria@email.com', phone: '+541155551234', address: 'Av. Libertador 456', balance: -1500, creditLimit: 30000 },
-];
+// Nota: Se eliminan los datos de ejemplo por defecto. El estado inicial cargará
+// arreglos vacíos a menos que exista información previa en localStorage.
 
 /* --------------------- Reducer --------------------- */
 function posReducer(state, action) {
@@ -706,10 +690,8 @@ export function POSProvider({ children }) {
 
         mergedSettings.taxRate = Number(mergedSettings.taxRate ?? 0.21);
 
-        // Validar y limpiar productos al cargar
-        const validatedProducts = validateAndCleanProducts(
-          parsed.products?.length ? parsed.products : sampleProducts
-        );
+        // Validar y limpiar productos al cargar (no usar datos de ejemplo por defecto)
+        const validatedProducts = validateAndCleanProducts(parsed.products?.length ? parsed.products : []);
 
         dispatch({
           type: 'LOAD_DATA',
@@ -717,9 +699,9 @@ export function POSProvider({ children }) {
             ...initialState,
             ...parsed,
             settings: mergedSettings,
-            products: validatedProducts, // Usar productos validados
-            customers: parsed.customers?.length ? parsed.customers : sampleCustomers,
-            providers: parsed.providers?.length ? parsed.providers : sampleProviders,
+            products: validatedProducts, // Usar productos validados (vacíos si no hay datos previos)
+            customers: parsed.customers?.length ? parsed.customers : [],
+            providers: parsed.providers?.length ? parsed.providers : [],
             providerRestock: parsed.providerRestock || {},
             cashRegister: parsed.cashRegister
               ? { ...initialState.cashRegister, ...parsed.cashRegister }
@@ -738,9 +720,9 @@ export function POSProvider({ children }) {
           type: 'LOAD_DATA',
           payload: {
             ...initialState,
-            products: validateAndCleanProducts(sampleProducts),
-            customers: sampleCustomers,
-            providers: sampleProviders,
+            products: [],
+            customers: [],
+            providers: [],
           },
         });
       }
@@ -750,9 +732,9 @@ export function POSProvider({ children }) {
         type: 'LOAD_DATA',
         payload: {
           ...initialState,
-          products: validateAndCleanProducts(sampleProducts),
-          customers: sampleCustomers,
-          providers: sampleProviders,
+          products: [],
+          customers: [],
+          providers: [],
         },
       });
     }
@@ -799,14 +781,7 @@ export function POSProvider({ children }) {
     });
 
     channel.close();
-  }, [
-    state.cart,
-    state.currentCustomer,
-    state.paymentMethod,
-    state.paymentAmount,
-    state.discount,
-    state.settings,
-  ]);
+  }, [state]);
 
   /* --------------------- API expuesta --------------------- */
   const addToCart = (product, quantity = 1, customPrice = null, note = '') => {
