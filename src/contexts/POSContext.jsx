@@ -23,13 +23,14 @@ const validateAndCleanProducts = (products) => {
       return;
     }
 
+    const codeKey = String(product.code).trim();
     // Verificar código duplicado
-    if (seenCodes.has(product.code)) {
-      duplicates.push(product.code);
-      invalidProducts.push({ ...product, error: `Código duplicado: ${product.code}` });
+    if (seenCodes.has(codeKey)) {
+      duplicates.push(codeKey);
+      invalidProducts.push({ ...product, error: `Código duplicado: ${codeKey}` });
       return;
     }
-    seenCodes.add(product.code);
+    seenCodes.add(codeKey);
 
     // Asegurar tipos correctos
     const cleanProduct = {
@@ -43,7 +44,7 @@ const validateAndCleanProducts = (products) => {
       providerId: product.providerId || '',
       // Asegurar que el nombre esté limpio
       name: (product.name || '').trim(),
-      code: (product.code || '').trim()
+      code: codeKey
     };
 
     // Validaciones adicionales
@@ -67,7 +68,7 @@ const validateAndCleanProducts = (products) => {
     console.warn('Productos inválidos omitidos:', invalidProducts);
   }
 
-  return validProducts;
+  return { validProducts, duplicates, invalidProducts };
 };
 
 const initialState = {
@@ -129,6 +130,7 @@ const initialState = {
   paymentAmount: '',
   discount: 0,
   notes: '',
+  importIssues: { duplicates: [], invalids: [] },
 };
 
 // Nota: Se eliminan los datos de ejemplo por defecto. El estado inicial cargará
@@ -139,6 +141,9 @@ function posReducer(state, action) {
   switch (action.type) {
     case 'LOAD_DATA':
       return { ...state, ...action.payload };
+
+    case 'SET_IMPORT_ISSUES':
+      return { ...state, importIssues: action.payload || { duplicates: [], invalids: [] } };
 
     case 'UPDATE_SETTINGS':
       return { ...state, settings: { ...state.settings, ...action.payload } };
@@ -691,7 +696,7 @@ export function POSProvider({ children }) {
         mergedSettings.taxRate = Number(mergedSettings.taxRate ?? 0.21);
 
         // Validar y limpiar productos al cargar (no usar datos de ejemplo por defecto)
-        const validatedProducts = validateAndCleanProducts(parsed.products?.length ? parsed.products : []);
+        const { validProducts, duplicates, invalidProducts } = validateAndCleanProducts(parsed.products?.length ? parsed.products : []);
 
         dispatch({
           type: 'LOAD_DATA',
@@ -699,21 +704,25 @@ export function POSProvider({ children }) {
             ...initialState,
             ...parsed,
             settings: mergedSettings,
-            products: validatedProducts, // Usar productos validados (vacíos si no hay datos previos)
+            products: validProducts, // Usar productos validados (vacíos si no hay datos previos)
             customers: parsed.customers?.length ? parsed.customers : [],
             providers: parsed.providers?.length ? parsed.providers : [],
             providerRestock: parsed.providerRestock || {},
             cashRegister: parsed.cashRegister
               ? { ...initialState.cashRegister, ...parsed.cashRegister }
               : initialState.cashRegister,
+            importIssues: { duplicates: duplicates || [], invalids: invalidProducts || [] },
           },
         });
 
-        // Mostrar advertencia si se encontraron productos inválidos
+        // Mostrar advertencia si se encontraron productos inválidos o duplicados
         const originalCount = parsed.products?.length || 0;
-        const validatedCount = validatedProducts.length;
+        const validatedCount = (validProducts || []).length;
         if (validatedCount < originalCount) {
           console.warn(`Se cargaron ${validatedCount} de ${originalCount} productos. ${originalCount - validatedCount} productos fueron omitidos por errores.`);
+        }
+        if ((duplicates || []).length > 0) {
+          console.warn(`Se detectaron ${duplicates.length} códigos duplicados al cargar productos.`);
         }
       } else {
         dispatch({

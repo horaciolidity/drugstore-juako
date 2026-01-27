@@ -9,110 +9,61 @@ import { Badge } from '@/components/ui/badge';
 import { usePOS } from '@/contexts/POSContext';
 import { toast } from '@/components/ui/use-toast';
 
-// Función para validar productos y detectar problemas
-const validateProduct = (product, allProducts) => {
+// Función para validar productos y detectar problemas (usa map de códigos para evitar O(n^2))
+const validateProduct = (product, allProducts, codeCounts = {}) => {
   const issues = [];
-  
-  // Validar código único
-  const duplicateCode = allProducts.filter(p => 
-    p.code === product.code && p.id !== product.id
-  );
-  if (duplicateCode.length > 0) {
-    issues.push({
-      type: 'error',
-      message: `Código duplicado: también usado por "${duplicateCode[0].name}"`
-    });
+
+  const codeKey = (product.code || '').toLowerCase();
+  const duplicate = codeKey && (codeCounts[codeKey] || 0) > 1;
+  if (duplicate) {
+    issues.push({ type: 'error', message: `Código duplicado: ${product.code}` });
   }
 
-  // Validar campos requeridos
-  if (!product.code?.trim()) {
-    issues.push({
-      type: 'error',
-      message: 'Código de producto vacío'
-    });
+  if (!product.code?.toString().trim()) {
+    issues.push({ type: 'error', message: 'Código de producto vacío' });
   }
 
-  if (!product.name?.trim()) {
-    issues.push({
-      type: 'error',
-      message: 'Nombre de producto vacío'
-    });
+  if (!product.name?.toString().trim()) {
+    issues.push({ type: 'error', message: 'Nombre de producto vacío' });
   }
 
-  // Validar precios
-  if (product.price < 0) {
-    issues.push({
-      type: 'error',
-      message: 'Precio negativo'
-    });
+  if (Number(product.price) < 0) {
+    issues.push({ type: 'error', message: 'Precio negativo' });
   }
 
-  if (product.cost < 0) {
-    issues.push({
-      type: 'error',
-      message: 'Costo negativo'
-    });
+  if (Number(product.cost) < 0) {
+    issues.push({ type: 'error', message: 'Costo negativo' });
   }
 
-  if (product.price < product.cost) {
-    issues.push({
-      type: 'warning',
-      message: 'Precio menor al costo'
-    });
+  if (Number(product.price) < Number(product.cost)) {
+    issues.push({ type: 'warning', message: 'Precio menor al costo' });
   }
 
-  // Validar stock
-  if (product.stock < 0) {
-    issues.push({
-      type: 'error',
-      message: 'Stock negativo'
-    });
+  if (Number(product.stock) < 0) {
+    issues.push({ type: 'error', message: 'Stock negativo' });
   }
 
-  if (product.minStock < 0) {
-    issues.push({
-      type: 'error',
-      message: 'Stock mínimo negativo'
-    });
+  if (Number(product.minStock) < 0) {
+    issues.push({ type: 'error', message: 'Stock mínimo negativo' });
   }
 
-  // Validar stock bajo
-  if (product.stock <= product.minStock && product.stock > 0) {
-    issues.push({
-      type: 'warning',
-      message: `Stock bajo (${product.stock} ${product.unit})`
-    });
+  if (Number(product.stock) <= Number(product.minStock) && Number(product.stock) > 0) {
+    issues.push({ type: 'warning', message: `Stock bajo (${product.stock} ${product.unit})` });
   }
 
-  if (product.stock === 0) {
-    issues.push({
-      type: 'error',
-      message: 'Stock agotado'
-    });
+  if (Number(product.stock) === 0) {
+    issues.push({ type: 'error', message: 'Stock agotado' });
   }
 
-  // Validar datos faltantes
-  if (!product.category?.trim()) {
-    issues.push({
-      type: 'warning',
-      message: 'Sin categoría asignada'
-    });
+  if (!product.category?.toString().trim()) {
+    issues.push({ type: 'warning', message: 'Sin categoría asignada' });
   }
 
   if (!product.providerId) {
-    issues.push({
-      type: 'warning',
-      message: 'Sin proveedor asignado'
-    });
+    issues.push({ type: 'warning', message: 'Sin proveedor asignado' });
   }
 
-  return {
-    ...product,
-    issues,
-    hasErrors: issues.some(issue => issue.type === 'error'),
-    hasWarnings: issues.some(issue => issue.type === 'warning'),
-    isValid: issues.length === 0
-  };
+  return { ...product, issues, hasErrors: issues.some(i => i.type === 'error'), hasWarnings: issues.some(i => i.type === 'warning'), isValid: issues.length === 0 };
 };
 
 export default function ProductSearch({ searchQuery }) {
@@ -127,9 +78,15 @@ export default function ProductSearch({ searchQuery }) {
 
   // Productos validados y enriquecidos con información de problemas
   const validatedProducts = useMemo(() => {
-    return state.products.map(product => 
-      validateProduct(product, state.products)
-    );
+    // Construir mapa de conteo de códigos para detectar duplicados de forma eficiente
+    const codeCounts = {};
+    state.products.forEach(p => {
+      const key = (p.code || '').toLowerCase();
+      if (!key) return;
+      codeCounts[key] = (codeCounts[key] || 0) + 1;
+    });
+
+    return state.products.map(product => validateProduct(product, state.products, codeCounts));
   }, [state.products]);
 
   // Productos con problemas (para el diálogo de reporte)
@@ -172,14 +129,20 @@ export default function ProductSearch({ searchQuery }) {
 
   const filteredProducts = useMemo(() => {
     if (!searchQuery.trim()) return validatedProducts.slice(0, 12);
-    
+
     const query = searchQuery.toLowerCase();
-    return validatedProducts.filter(product =>
-      product.name.toLowerCase().includes(query) ||
-      product.code.toLowerCase().includes(query) ||
-      product.category.toLowerCase().includes(query)
-    );
-  }, [searchQuery, validatedProducts]);
+
+    return validatedProducts.filter(product => {
+      const providerName = (state.providers.find(p => p.id === product.providerId)?.name || '').toLowerCase();
+      return (
+        (product.name || '').toLowerCase().includes(query) ||
+        (product.code || '').toLowerCase().includes(query) ||
+        (product.category || '').toLowerCase().includes(query) ||
+        (providerName).includes(query) ||
+        (product.id || '').toString().toLowerCase().includes(query)
+      );
+    });
+  }, [searchQuery, validatedProducts, state.providers]);
 
   const handleProductClick = (product) => {
     if (product.unit === 'unidad') {

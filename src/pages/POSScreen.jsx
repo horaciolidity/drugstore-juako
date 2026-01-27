@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Search, ShoppingCart, Calculator, Users, Package, DollarSign,
   BarChart3, Settings, Monitor, History, Truck, Sun, Moon,
-  MessageCircle, Mail, LogOut
+  MessageCircle, Mail, LogOut, AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -196,6 +196,35 @@ export default function POSScreen() {
             </div>
           </div>
           {/* ===== /BANNER SUPERIOR ===== */}
+
+          {/* ALERTA DE DUPLICADOS/ERRORES DE IMPORTACIÓN */}
+          {((state.importIssues?.duplicates?.length || 0) > 0 || (state.importIssues?.invalids?.length || 0) > 0) && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 p-4 rounded-lg border bg-yellow-50 border-yellow-200 flex items-center justify-between"
+            >
+              <div className="flex items-center space-x-3">
+                <AlertTriangle className="h-5 w-5 text-yellow-700" />
+                <div>
+                  <div className="font-semibold text-yellow-800">Problemas al cargar productos</div>
+                  <div className="text-sm text-yellow-700">
+                    {state.importIssues.duplicates.length > 0 && (
+                      <span>{state.importIssues.duplicates.length} código(s) duplicado(s). </span>
+                    )}
+                    {state.importIssues.invalids.length > 0 && (
+                      <span>{state.importIssues.invalids.length} producto(s) inválido(s) omitido(s).</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button onClick={() => setActiveTab('products')} variant="outline" size="sm">
+                  Ver Productos
+                </Button>
+              </div>
+            </motion.div>
+          )}
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-4 md:flex md:w-auto card-glass p-1 bg-transparent border-border h-auto">
