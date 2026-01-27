@@ -302,14 +302,14 @@ const importProducts = () => {
         // LÓGICA: Actualizar solo productos modificados, procesando solo `validItems`
         const processingInvalids = [];
         validItems.forEach(importedProduct => {
+          const existingProduct = state.products.find(p => p.code === importedProduct.code);
           // Validar contra las reglas del formulario para evitar rechazos silenciosos del reducer
-          const formErrors = validateProduct(importedProduct, state.products, null);
+          // Si existe un producto previo, pasar su id como editingId para evitar error de código duplicado
+          const formErrors = validateProduct(importedProduct, state.products, existingProduct ? existingProduct.id : null);
           if (formErrors.length > 0) {
             processingInvalids.push({ code: importedProduct.code, name: importedProduct.name, errors: formErrors });
             return;
           }
-
-          const existingProduct = state.products.find(p => p.code === importedProduct.code);
 
           if (existingProduct) {
             // Verificar si realmente hay cambios antes de actualizar
