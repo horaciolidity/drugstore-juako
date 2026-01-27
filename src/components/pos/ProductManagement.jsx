@@ -429,10 +429,28 @@ const parseCSV = (csvContent) => {
 const parseTXT = (txtContent) => {
   const products = [];
   const sections = txtContent.split('----------------------------------------');
-  
+
+  const normalizeKey = (k) => String(k || '').toLowerCase().normalize('NFD').replace(/[\u0000-\u036f]/g, '').replace(/[^a-z0-9 ]/g, '').trim();
+  const parseNumber = (v) => {
+    if (v == null) return 0;
+    let s = String(v).trim();
+    // eliminar símbolo de moneda y espacios
+    s = s.replace(/\$/g, '').replace(/\s/g, '');
+    if (s === '') return 0;
+    // Si contiene ambos '.' y ',', asumir formato europeo: '.' miles, ',' decimal
+    if (s.indexOf('.') !== -1 && s.indexOf(',') !== -1) {
+      s = s.replace(/\./g, '').replace(/,/g, '.');
+    } else {
+      // reemplazar coma por punto
+      s = s.replace(/,/g, '.');
+    }
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+  };
+
   sections.forEach(section => {
     if (!section.trim()) return;
-    
+
     const lines = section.split('\n').filter(line => line.trim());
     const product = {
       code: '',
@@ -445,62 +463,69 @@ const parseTXT = (txtContent) => {
       minStock: 0,
       providerId: ''
     };
-    
+
     lines.forEach(line => {
       const separatorIndex = line.indexOf(':');
       if (separatorIndex === -1) return;
-      
+
       const key = line.substring(0, separatorIndex).trim();
       const value = line.substring(separatorIndex + 1).trim();
-      
-      const cleanKey = key.toLowerCase();
-      
-      switch (cleanKey) {
-        case 'código':
+
+      const nk = normalizeKey(key);
+
+      switch (nk) {
+        case 'codigo':
+        case 'cod':
           product.code = value;
           break;
         case 'nombre':
+        case 'name':
           product.name = value;
           break;
         case 'proveedor':
-          // Buscar proveedor por nombre para obtener ID
-          const provider = state.providers.find(p => 
-            p.name.toLowerCase() === value.toLowerCase()
-          );
-          if (provider) {
-            product.providerId = provider.id;
-          }
+        case 'provider':
+          // Buscar proveedor por nombre para obtener ID (normalizar)
+          const provName = String(value || '').trim().toLowerCase();
+          const provider = state.providers.find(p => (p.name || '').toLowerCase() === provName);
+          if (provider) product.providerId = provider.id;
           break;
         case 'precio':
-          product.price = parseFloat(value.replace('$', '').replace(',', '')) || 0;
+        case 'price':
+          product.price = parseNumber(value);
           break;
         case 'costo':
-          product.cost = parseFloat(value.replace('$', '').replace(',', '')) || 0;
+        case 'cost':
+          product.cost = parseNumber(value);
           break;
-        case 'stock':
-          const stockMatch = value.match(/([\d.]+)\s*(\w+)/);
+        case 'stock': {
+          const stockMatch = value.match(/([\d.,]+)\s*(\w+)?/);
           if (stockMatch) {
-            product.stock = parseFloat(stockMatch[1]) || 0;
+            product.stock = parseNumber(stockMatch[1]);
             product.unit = stockMatch[2] || 'unidad';
           } else {
-            product.stock = parseFloat(value) || 0;
+            product.stock = parseNumber(value);
           }
-          break;
-        case 'categoría':
+        } break;
+        case 'categoria':
+        case 'category':
           product.category = value !== 'N/A' ? value : '';
           break;
-        case 'stock mínimo':
+        case 'stock minimo':
+        case 'stockminimo':
+        case 'minstock':
           product.minStock = parseInt(value) || 0;
+          break;
+        default:
           break;
       }
     });
-    
+
     // Solo agregar si tiene código y nombre
     if (product.code && product.name) {
       products.push(product);
     }
   });
-  
+
   return products;
 };
 
