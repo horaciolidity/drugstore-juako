@@ -267,19 +267,39 @@ const importProducts = () => {
         // Validar cada producto y separar válidos/invalidos para permitir import parcial
         const invalidItems = [];
         const validItems = [];
-        importedProducts.forEach((p, idx) => {
+        const seenCodesInFile = new Set();
+        importedProducts.forEach((raw, idx) => {
+          const p = { ...raw };
           const errs = [];
-          if (!p.code || !String(p.code).trim()) errs.push('código requerido');
-          if (!p.name || !String(p.name).trim()) errs.push('nombre requerido');
-          if (isNaN(p.price) || Number(p.price) < 0) errs.push('precio inválido');
-          if (isNaN(p.cost) || Number(p.cost) < 0) errs.push('costo inválido');
-          if (isNaN(p.stock) || Number(p.stock) < 0) errs.push('stock inválido');
-          if (isNaN(p.minStock) || Number(p.minStock) < 0) errs.push('stock mínimo inválido');
+
+          // Normalizar código y nombre
+          p.code = p.code?.toString().trim() || '';
+          p.name = p.name?.toString().trim() || '';
+
+          if (!p.code) errs.push('código requerido');
+          if (!p.name) errs.push('nombre requerido');
+
+          // Coerción numérica: si falta, asumir 0 (comportamiento histórico)
+          p.price = isNaN(Number(p.price)) ? 0 : Number(p.price);
+          p.cost = isNaN(Number(p.cost)) ? 0 : Number(p.cost);
+          p.stock = isNaN(Number(p.stock)) ? 0 : Number(p.stock);
+          p.minStock = isNaN(Number(p.minStock)) ? 0 : Number(p.minStock);
+
+          if (p.price < 0) errs.push('precio negativo');
+          if (p.cost < 0) errs.push('costo negativo');
+          if (p.stock < 0) errs.push('stock negativo');
+          if (p.minStock < 0) errs.push('stock mínimo negativo');
+
+          // Evitar procesar múltiples filas con el mismo código: aceptar la primera y marcar el resto
+          if (p.code && seenCodesInFile.has(p.code)) {
+            errs.push('duplicado en archivo (fila ignorada)');
+          }
 
           if (errs.length > 0) {
             invalidItems.push({ index: idx + 1, code: p.code, name: p.name, errors: errs });
           } else {
             validItems.push(p);
+            if (p.code) seenCodesInFile.add(p.code);
           }
         });
 
