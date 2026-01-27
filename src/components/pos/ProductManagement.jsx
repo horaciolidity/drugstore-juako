@@ -300,7 +300,15 @@ const importProducts = () => {
         let unchanged = 0;
 
         // LÓGICA: Actualizar solo productos modificados, procesando solo `validItems`
+        const processingInvalids = [];
         validItems.forEach(importedProduct => {
+          // Validar contra las reglas del formulario para evitar rechazos silenciosos del reducer
+          const formErrors = validateProduct(importedProduct, state.products, null);
+          if (formErrors.length > 0) {
+            processingInvalids.push({ code: importedProduct.code, name: importedProduct.name, errors: formErrors });
+            return;
+          }
+
           const existingProduct = state.products.find(p => p.code === importedProduct.code);
 
           if (existingProduct) {
@@ -343,6 +351,10 @@ const importProducts = () => {
             added++;
           }
         });
+
+        // Merge any processing invalids into fileInvalids
+        const fileInvalids = (typeof invalidItems !== 'undefined' ? invalidItems : []).map(i => ({ code: i.code, name: i.name, index: i.index, errors: i.errors }));
+        processingInvalids.forEach(pi => fileInvalids.push({ code: pi.code, name: pi.name, errors: pi.errors }));
 
         // Si existieron invalidItems, guardarlos para mostrar en banner
         const fileInvalids = (typeof invalidItems !== 'undefined' ? invalidItems : []).map(i => ({ code: i.code, name: i.name, index: i.index, errors: i.errors }));
