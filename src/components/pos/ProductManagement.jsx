@@ -356,16 +356,13 @@ const importProducts = () => {
         const fileInvalids = (typeof invalidItems !== 'undefined' ? invalidItems : []).map(i => ({ code: i.code, name: i.name, index: i.index, errors: i.errors }));
         processingInvalids.forEach(pi => fileInvalids.push({ code: pi.code, name: pi.name, errors: pi.errors }));
 
-        // Si existieron invalidItems, guardarlos para mostrar en banner
-        const fileInvalids = (typeof invalidItems !== 'undefined' ? invalidItems : []).map(i => ({ code: i.code, name: i.name, index: i.index, errors: i.errors }));
-
         toast({
           title: "Importación completada",
           description: `${added} nuevos, ${updated} actualizados, ${unchanged} sin cambios`
         });
 
-        // Limpiar issues si la importación fue exitosa
-        dispatch({ type: 'SET_IMPORT_ISSUES', payload: { duplicates: [], invalids: [] } });
+        // Guardar issues (duplicates + invalids) en el estado para banner
+        dispatch({ type: 'SET_IMPORT_ISSUES', payload: { duplicates: fileDuplicates, invalids: fileInvalids } });
 
       } catch (error) {
         console.error('Error importing products:', error);
