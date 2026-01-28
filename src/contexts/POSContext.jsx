@@ -139,8 +139,18 @@ const initialState = {
 /* --------------------- Reducer --------------------- */
 function posReducer(state, action) {
   switch (action.type) {
-    case 'LOAD_DATA':
-      return { ...state, ...action.payload };
+    case 'LOAD_DATA': {
+      const incoming = action.payload || {};
+      const incomingProducts = Array.isArray(incoming.products) ? incoming.products : [];
+      const { validProducts, duplicates, invalidProducts } = validateAndCleanProducts(incomingProducts);
+
+      return {
+        ...state,
+        ...incoming,
+        products: validProducts,
+        importIssues: { duplicates: duplicates || [], invalids: invalidProducts || [] },
+      };
+    }
 
     case 'SET_IMPORT_ISSUES':
       return { ...state, importIssues: action.payload || { duplicates: [], invalids: [] } };

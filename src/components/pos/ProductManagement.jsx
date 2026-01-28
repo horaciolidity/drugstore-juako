@@ -430,7 +430,7 @@ const parseTXT = (txtContent) => {
   const products = [];
   const sections = txtContent.split('----------------------------------------');
 
-  const normalizeKey = (k) => String(k || '').toLowerCase().normalize('NFD').replace(/[\u0000-\u036f]/g, '').replace(/[^a-z0-9 ]/g, '').trim();
+  const normalizeKey = (k) => String(k || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, '').trim();
   const parseNumber = (v) => {
     if (v == null) return 0;
     let s = String(v).trim();
