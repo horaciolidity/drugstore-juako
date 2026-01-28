@@ -162,86 +162,64 @@ export default function ProductManagement() {
     }
   };
 
- // FUNCIÓN DE IMPORTACIÓN CORREGIDA - ACTUALIZA SOLO PRODUCTOS MODIFICADOS
+// FUNCIÓN DE IMPORTACIÓN - parsea JSON/CSV/TXT, normaliza y valida
 const importProducts = () => {
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = '.json,.csv,.txt';
-  
+
   input.onchange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const fileExtension = file.name.split('.').pop().toLowerCase();
-
-    // Mensaje más claro sobre lo que hará
-    if (!window.confirm(
-      `¿Importar productos desde ${file.name}?\n\n` +
-      `• Se actualizarán los productos existentes que coincidan por código\n` +
-      `• Se agregarán productos nuevos\n` +
-      `• Los productos que no estén en el archivo se mantendrán`
-    )) {
-      return;
-    }
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (!window.confirm(`Importar productos desde ${file.name}?`)) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = (ev) => {
       try {
-        let importedProducts = [];
-        const fileContent = event.target.result;
+        let raw = ev.target.result;
+        let items = [];
 
-        switch (fileExtension) {
-          case 'json':
-            importedProducts = JSON.parse(fileContent);
-            break;
-
-          case 'csv':
-            importedProducts = parseCSV(fileContent);
-            break;
-
-          case 'txt':
-            importedProducts = parseTXT(fileContent);
-            break;
-
-          default:
-            throw new Error('Formato de archivo no soportado');
+        if (ext === 'json') {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) items = parsed;
+          else if (parsed && Array.isArray(parsed.products)) items = parsed.products;
+          else throw new Error('JSON inválido: debe ser un array o un objeto con "products"');
+        } else if (ext === 'csv') {
+          items = parseCSV(raw);
+        } else if (ext === 'txt') {
+          items = parseTXT(raw);
+        } else {
+          throw new Error('Formato no soportado');
         }
 
-        if (!Array.isArray(importedProducts)) {
-          // Soportar objetos JSON con campo `products`
-          if (importedProducts && typeof importedProducts === 'object' && Array.isArray(importedProducts.products)) {
-            importedProducts = importedProducts.products;
-          } else {
-            throw new Error('El archivo debe contener un array de productos o un objeto con la propiedad "products"');
-          }
-        }
-
-        // Normalizar claves comunes de archivos (soporta encabezados en español/inglés y variantes)
-        const normalizeKey = (k) => String(k || '').toLowerCase().normalize('NFD').replace(/[ -\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+        // Normalizar claves
+        const normalizeKey = (k) => String(k || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
         const headerAliases = {
-          code: ['code', 'codigo', 'cod', 'codigo', 'codi'],
+          code: ['code', 'codigo', 'cod', 'codi'],
           name: ['name', 'nombre', 'descripcion', 'description'],
           price: ['price', 'precio', 'valor'],
           cost: ['cost', 'costo'],
           stock: ['stock', 'existencia', 'cantidad'],
           unit: ['unit', 'unidad'],
-          category: ['category', 'categoria', 'categoria'],
-          minStock: ['minstock', 'stockminimo', 'stockminimo'],
+          category: ['category', 'categoria'],
+          minStock: ['minstock', 'stockminimo'],
           provider: ['provider', 'proveedor']
         };
 
-        const normalizeImported = (raw) => {
+        const normalizeRow = (rawRow) => {
           const out = { code: '', name: '', price: 0, cost: 0, stock: 0, unit: 'unidad', category: '', minStock: 0, providerId: '' };
-          Object.keys(raw || {}).forEach(k => {
+          Object.keys(rawRow || {}).forEach(k => {
             const nk = normalizeKey(k);
-            const v = raw[k];
+            const v = rawRow[k];
             for (const target in headerAliases) {
-              if (headerAliases[target].some(a => a === nk)) {
+              if (headerAliases[target].includes(nk)) {
                 if (target === 'provider') {
                   const provName = String(v || '').trim().toLowerCase();
                   const prov = state.providers.find(p => (p.name || '').toLowerCase() === provName);
                   if (prov) out.providerId = prov.id;
-                } else if (['price', 'cost', 'stock', 'minStock'].includes(target)) {
+                } else if (['price','cost','stock','minStock'].includes(target)) {
                   const num = parseFloat(String(v).replace(/[^0-9.,-]/g, '').replace(',', '.')) || 0;
                   out[target] = num;
                 } else {
@@ -253,150 +231,72 @@ const importProducts = () => {
           return out;
         };
 
-        importedProducts = importedProducts.map(normalizeImported);
+        const normalized = items.map(normalizeRow);
 
         // Detectar duplicados en archivo
-        const codeCounts = {};
-        importedProducts.forEach(p => {
-          const k = (p.code || '').toString().trim();
-          if (!k) return;
-          codeCounts[k] = (codeCounts[k] || 0) + 1;
-        });
-        const fileDuplicates = Object.keys(codeCounts).filter(k => codeCounts[k] > 1);
+        const counts = {};
+        normalized.forEach(p => { const k = (p.code||'').toString().trim(); if (k) counts[k]=(counts[k]||0)+1; });
+        const fileDuplicates = Object.keys(counts).filter(k=>counts[k]>1);
 
-        // Validar cada producto y separar válidos/invalidos para permitir import parcial
-        const invalidItems = [];
-        const validItems = [];
-        const seenCodesInFile = new Set();
-        importedProducts.forEach((raw, idx) => {
-          const p = { ...raw };
+        const invalids = [];
+        const valids = [];
+        const seen = new Set();
+        normalized.forEach((p, idx) => {
+          p.code = (p.code||'').toString().trim();
+          p.name = (p.name||'').toString().trim();
+          p.price = isNaN(Number(p.price))?0:Number(p.price);
+          p.cost = isNaN(Number(p.cost))?0:Number(p.cost);
+          p.stock = isNaN(Number(p.stock))?0:Number(p.stock);
+          p.minStock = isNaN(Number(p.minStock))?0:Number(p.minStock);
+
           const errs = [];
-
-          // Normalizar código y nombre
-          p.code = p.code?.toString().trim() || '';
-          p.name = p.name?.toString().trim() || '';
-
           if (!p.code) errs.push('código requerido');
           if (!p.name) errs.push('nombre requerido');
+          if (p.price<0) errs.push('precio negativo');
+          if (p.cost<0) errs.push('costo negativo');
+          if (p.stock<0) errs.push('stock negativo');
+          if (p.minStock<0) errs.push('stock mínimo negativo');
+          if (p.code && seen.has(p.code)) errs.push('duplicado en archivo');
 
-          // Coerción numérica: si falta, asumir 0 (comportamiento histórico)
-          p.price = isNaN(Number(p.price)) ? 0 : Number(p.price);
-          p.cost = isNaN(Number(p.cost)) ? 0 : Number(p.cost);
-          p.stock = isNaN(Number(p.stock)) ? 0 : Number(p.stock);
-          p.minStock = isNaN(Number(p.minStock)) ? 0 : Number(p.minStock);
-
-          if (p.price < 0) errs.push('precio negativo');
-          if (p.cost < 0) errs.push('costo negativo');
-          if (p.stock < 0) errs.push('stock negativo');
-          if (p.minStock < 0) errs.push('stock mínimo negativo');
-
-          // Evitar procesar múltiples filas con el mismo código: aceptar la primera y marcar el resto
-          if (p.code && seenCodesInFile.has(p.code)) {
-            errs.push('duplicado en archivo (fila ignorada)');
-          }
-
-          if (errs.length > 0) {
-            invalidItems.push({ index: idx + 1, code: p.code, name: p.name, errors: errs });
-          } else {
-            validItems.push(p);
-            if (p.code) seenCodesInFile.add(p.code);
-          }
+          if (errs.length) invalids.push({ index: idx+1, code: p.code, name: p.name, errors: errs });
+          else { valids.push(p); if (p.code) seen.add(p.code); }
         });
 
-        if (invalidItems.length > 0 && validItems.length === 0) {
-          // Si NO hay items válidos, informar y abortar
-          toast({
-            title: 'Errores en los datos importados',
-            description: `${invalidItems.length} producto(s) inválido(s). Revise el archivo.`,
-            variant: 'destructive',
-          });
-          // Guardar issues para banner
-          dispatch({ type: 'SET_IMPORT_ISSUES', payload: { duplicates: fileDuplicates, invalids: invalidItems } });
+        if (valids.length===0) {
+          toast({ title: 'Errores en importación', description: `${invalids.length} producto(s) inválido(s).`, variant:'destructive' });
+          dispatch({ type: 'SET_IMPORT_ISSUES', payload: { duplicates: fileDuplicates, invalids } });
           return;
         }
 
-        let added = 0;
-        let updated = 0;
-        let unchanged = 0;
-
-        // LÓGICA: Actualizar solo productos modificados, procesando solo `validItems`
+        let added=0, updated=0, unchanged=0;
         const processingInvalids = [];
-        validItems.forEach(importedProduct => {
-          const existingProduct = state.products.find(p => p.code === importedProduct.code);
-          // Validar contra las reglas del formulario para evitar rechazos silenciosos del reducer
-          // Si existe un producto previo, pasar su id como editingId para evitar error de código duplicado
-          const formErrors = validateProduct(importedProduct, state.products, existingProduct ? existingProduct.id : null);
-          if (formErrors.length > 0) {
-            processingInvalids.push({ code: importedProduct.code, name: importedProduct.name, errors: formErrors });
-            return;
-          }
 
-          if (existingProduct) {
-            // Verificar si realmente hay cambios antes de actualizar
-            const hasChanges =
-              existingProduct.name !== importedProduct.name ||
-              Number(existingProduct.price) !== Number(importedProduct.price) ||
-              Number(existingProduct.cost) !== Number(importedProduct.cost) ||
-              Number(existingProduct.stock) !== Number(importedProduct.stock) ||
-              existingProduct.unit !== importedProduct.unit ||
-              existingProduct.category !== importedProduct.category ||
-              Number(existingProduct.minStock) !== Number(importedProduct.minStock);
+        valids.forEach(p => {
+          const exist = state.products.find(x=>x.code===p.code);
+          const formErrors = validateProduct(p, state.products, exist?exist.id:null);
+          if (formErrors.length){ processingInvalids.push({ code: p.code, name: p.name, errors: formErrors }); return; }
 
-            if (hasChanges) {
-              dispatch({
-                type: 'UPDATE_PRODUCT',
-                payload: {
-                  id: existingProduct.id,
-                  updates: {
-                    ...importedProduct,
-                    // Mantener el ID original y providerId
-                    id: existingProduct.id,
-                    providerId: importedProduct.providerId || existingProduct.providerId
-                  }
-                }
-              });
-              updated++;
-            } else {
-              unchanged++;
-            }
+          if (exist){
+            const changed = exist.name!==p.name || Number(exist.price)!==Number(p.price) || Number(exist.cost)!==Number(p.cost) || Number(exist.stock)!==Number(p.stock) || exist.unit!==p.unit || exist.category!==p.category || Number(exist.minStock)!==Number(p.minStock);
+            if (changed){ dispatch({ type:'UPDATE_PRODUCT', payload:{ id: exist.id, updates: { ...p, providerId: p.providerId||exist.providerId } } }); updated++; }
+            else unchanged++;
           } else {
-            // Agregar nuevo producto
-            dispatch({
-              type: 'ADD_PRODUCT',
-              payload: {
-                ...importedProduct,
-                id: Date.now().toString() // Generar nuevo ID
-              }
-            });
-            added++;
-          }
+            dispatch({ type:'ADD_PRODUCT', payload: { ...p, id: Date.now().toString() } }); added++; }
         });
 
-        // Merge any processing invalids into fileInvalids
-        const fileInvalids = (typeof invalidItems !== 'undefined' ? invalidItems : []).map(i => ({ code: i.code, name: i.name, index: i.index, errors: i.errors }));
-        processingInvalids.forEach(pi => fileInvalids.push({ code: pi.code, name: pi.name, errors: pi.errors }));
+        const fileInvalids = [...invalids];
+        processingInvalids.forEach(pi=>fileInvalids.push(pi));
 
-        toast({
-          title: "Importación completada",
-          description: `${added} nuevos, ${updated} actualizados, ${unchanged} sin cambios`
-        });
-
-        // Guardar issues (duplicates + invalids) en el estado para banner
+        toast({ title: 'Importación completada', description: `${added} nuevos, ${updated} actualizados, ${unchanged} sin cambios` });
         dispatch({ type: 'SET_IMPORT_ISSUES', payload: { duplicates: fileDuplicates, invalids: fileInvalids } });
 
-      } catch (error) {
-        console.error('Error importing products:', error);
-        toast({
-          title: "Error al importar",
-          description: error.message || "Formato de archivo inválido",
-          variant: "destructive"
-        });
+      } catch (err){
+        console.error('Import error', err);
+        toast({ title:'Error al importar', description: err.message||'Archivo inválido', variant:'destructive' });
       }
     };
-
     reader.readAsText(file);
   };
-
   input.click();
 };
 

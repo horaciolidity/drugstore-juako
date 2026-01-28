@@ -141,7 +141,12 @@ function posReducer(state, action) {
   switch (action.type) {
     case 'LOAD_DATA': {
       const incoming = action.payload || {};
-      const incomingProducts = Array.isArray(incoming.products) ? incoming.products : [];
+      // aceptar tanto payload = { products: [...] } como payload = [...]
+      const incomingProducts = Array.isArray(incoming.products)
+        ? incoming.products
+        : Array.isArray(incoming)
+          ? incoming
+          : [];
       const { validProducts, duplicates, invalidProducts } = validateAndCleanProducts(incomingProducts);
 
       return {
