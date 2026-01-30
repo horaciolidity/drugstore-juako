@@ -116,22 +116,7 @@ export default function Login() {
             </Button>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="mt-8 pt-6 border-t border-white/20">
-            <p className="text-gray-300 text-sm mb-3 font-semibold">Credenciales de prueba:</p>
-            <div className="space-y-2 text-sm">
-              <div className="bg-white/5 p-3 rounded-lg">
-                <p className="text-gray-400">
-                  <span className="text-blue-400 font-medium">Admin:</span> admin / admin
-                </p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-lg">
-                <p className="text-gray-400">
-                  <span className="text-green-400 font-medium">Empleado:</span> empleado / 1234
-                </p>
-              </div>
-            </div>
-          </div>
+          {/* Credenciales de prueba eliminadas */}
         </div>
       </motion.div>
     </div>
